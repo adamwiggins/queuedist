@@ -12,13 +12,17 @@ puts "=== Worker #{worker}"
 AMQP.start(:host => 'localhost') do
 
 	amq = MQ.new
-	amq.queue('work').subscribe(:ack => true) do |h, msg|
-		puts msg.to_i
-		s = worker == 1 ? 1 : 10
-		puts "sleeping for #{s}"
-		sleep s
-		puts "done, sending ack"
-		h.ack
+	queue = amq.queue('work')
+
+	EM.add_periodic_timer(1) do
+		queue.pop(:nowait => false) do |msg|
+			next unless msg
+			puts "Got: #{msg}"
+			s = worker == 1 ? 1 : 10
+			puts "sleeping for #{s}"
+			sleep s
+			puts "done"
+		end
 	end
 
 end
